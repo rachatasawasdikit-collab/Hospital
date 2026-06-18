@@ -51,6 +51,12 @@
     padding: 18px 32px;
     display: flex;
     align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+  }
+  .header-left {
+    display: flex;
+    align-items: center;
     gap: 20px;
   }
   .header-logo {
@@ -66,6 +72,18 @@
   .header-logo svg { width: 26px; height: 26px; stroke: #fff; fill: none; stroke-width: 1.8; }
   .header-title h1 { font-size: 18px; font-weight: 600; letter-spacing: 0.3px; }
   .header-title p { font-size: 13px; color: var(--blue-100); margin-top: 2px; font-weight: 300; }
+  
+  .sync-status {
+    font-size: 12px;
+    color: var(--blue-100);
+    background: rgba(255,255,255,0.1);
+    padding: 6px 12px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .sync-dot { width: 8px; height: 8px; background: #52c41a; border-radius: 50%; display: inline-block; }
 
   .main { max-width: 1100px; margin: 0 auto; padding: 28px 32px; }
 
@@ -178,7 +196,7 @@
   }
   .equip-card:hover { border-color: var(--blue-600); background: var(--blue-50); }
   .equip-card.selected { border-color: var(--blue-600); background: var(--blue-50); }
-  .equip-card.unavailable { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+  .equip-card.borrowed { border-color: var(--amber-600); background: var(--amber-50); opacity: 0.7; }
   .equip-name { font-size: 14px; font-weight: 600; color: var(--blue-900); margin-bottom: 4px; }
   .equip-id { font-size: 11px; color: var(--gray-400); margin-bottom: 8px; }
   .equip-status {
@@ -262,8 +280,6 @@
   }
   .toast.show { transform: translateY(0); opacity: 1; }
 
-  .divider { height: 1px; background: var(--gray-100); margin: 20px 0; }
-
   .selected-equip-info {
     background: var(--blue-50);
     border: 1px solid var(--blue-100);
@@ -307,12 +323,17 @@
 
 <header>
   <div class="header-inner">
-    <div class="header-logo">
-      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 12h8M12 8v8"/></svg>
+    <div class="header-left">
+      <div class="header-logo">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 12h8M12 8v8"/></svg>
+      </div>
+      <div class="header-title">
+        <h1>ระบบยืม-คืนอุปกรณ์กายภาพบำบัด</h1>
+        <p>แผนกกายภาพบำบัด — โรงพยาบาล</p>
+      </div>
     </div>
-    <div class="header-title">
-      <h1>ระบบยืม-คืนอุปกรณ์กายภาพบำบัด</h1>
-      <p>แผนกกายภาพบำบัด — โรงพยาบาล</p>
+    <div class="sync-status" id="syncLabel">
+      <span class="sync-dot" style="background:#888"></span> กำลังเริ่มระบบ...
     </div>
   </div>
 </header>
@@ -368,7 +389,7 @@
           <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h8m-8 6h16"/></svg>
           เลือกอุปกรณ์ที่ต้องการยืม
         </div>
-        <div class="section-title">อุปกรณ์ที่พร้อมให้ยืม</div>
+        <div class="section-title">รายการอุปกรณ์ทั้งหมด</div>
         <div class="equip-grid" id="equipGrid"></div>
       </div>
 
@@ -531,26 +552,6 @@ let selectedEquipId = null;
 // ⚠️ ใส่ URL ของ Google Apps Script Web App ตรงนี้ได้เลยครับ
 let sheetUrl = 'https://script.google.com/macros/s/XXXXXX/exec'; 
 
-const STORAGE_KEY_EQUIP = 'pt_equipments';
-const STORAGE_KEY_TRANS = 'pt_transactions';
-
-function loadData() {
-  try {
-    const eq = localStorage.getItem(STORAGE_KEY_EQUIP);
-    const tr = localStorage.getItem(STORAGE_KEY_TRANS);
-    if (eq) equipments = JSON.parse(eq);
-    if (tr) transactions = JSON.parse(tr);
-  } catch(e) {}
-  if (equipments.length === 0) loadDefaultEquipments();
-}
-
-function saveData() {
-  try {
-    localStorage.setItem(STORAGE_KEY_EQUIP, JSON.stringify(equipments));
-    localStorage.setItem(STORAGE_KEY_TRANS, JSON.stringify(transactions));
-  } catch(e) {}
-}
-
 function loadDefaultEquipments() {
   equipments = [
     { id: 'PT-001', name: 'เครื่อง TENS (กระตุ้นไฟฟ้า)', category: 'electrotherapy', status: 'available', note: '' },
@@ -559,29 +560,31 @@ function loadDefaultEquipments() {
     { id: 'PT-004', name: 'ไม้เท้า 4 ขา (Quad Cane)', category: 'mobility', status: 'available', note: '' },
     { id: 'PT-005', name: 'Walker มาตรฐาน', category: 'mobility', status: 'available', note: '' },
     { id: 'PT-006', name: 'ไม้ค้ำยัน (Axillary Crutch)', category: 'mobility', status: 'available', note: '' },
-    { id: 'PT-007', name: 'Theraband (ยางยืด Resistance Band)', category: 'exercise', status: 'available', note: '' },
+    { id: 'PT-007', name: 'Theraband (ยางยืด)', category: 'exercise', status: 'available', note: '' },
     { id: 'PT-008', name: 'ลูกบอลกายภาพ (Exercise Ball)', category: 'exercise', status: 'available', note: '' },
     { id: 'PT-009', name: 'เครื่องวัดองศาข้อต่อ (Goniometer)', category: 'assessment', status: 'available', note: '' },
-    { id: 'PT-010', name: 'เครื่อง Hot Pack / Cold Pack', category: 'thermal', status: 'available', note: '' },
-    { id: 'PT-011', name: 'Tilt Table', category: 'exercise', status: 'available', note: '' },
-    { id: 'PT-012', name: 'Balance Board', category: 'exercise', status: 'available', note: '' },
+    { id: 'PT-010', name: 'เครื่อง Hot Pack / Cold Pack', category: 'thermal', status: 'available', note: '' }
   ];
-  saveData();
 }
 
-// 🌐 ฟังก์ชันดึงข้อมูลอัตโนมัติจาก API เพื่อซิงค์สถานะ
+// 🌐 ฟังก์ชันดึงข้อมูลแบบ Real-time จาก Google Sheets
 async function pullDataFromSheet() {
-  if (!sheetUrl || sheetUrl.includes('XXXXXX')) return;
+  if (!sheetUrl || sheetUrl.includes('XXXXXX')) {
+    document.getElementById('syncLabel').innerHTML = '<span class="sync-dot" style="background:#ff4d4f"></span> ไม่ได้ใส่ Web App URL';
+    return;
+  }
   
   try {
     const response = await fetch(sheetUrl);
-    if (!response.ok) throw new Error('ดึงข้อมูลไม่สำเร็จ');
+    if (!response.ok) throw new Error('Network response error');
     const data = await response.json();
     
     if (Array.isArray(data)) {
+      // ตรวจสอบว่าแผ่นข้อมูลส่งโครงสร้างประวัติการยืม (Transactions) หรือไม่
       if (data.length > 0 && (data[0].transId || data[0].action)) {
         transactions = data;
         
+        // รีเซ็ตสถานะเป็นว่างก่อน จากนั้นตรวจสอบว่าชิ้นไหนโดนยืมอยู่บ้าง
         equipments.forEach(e => e.status = 'available');
         transactions.forEach(t => {
           if ((t.action === 'BORROW' || t.action === 'WEB_BORROW') && !t.returnedAt) {
@@ -590,24 +593,24 @@ async function pullDataFromSheet() {
           }
         });
       } else {
-        let latestStatus = {};
+        // หากฝั่งชีตส่งรายชื่ออุปกรณ์พร้อมสถานะตรงๆ
         data.forEach(item => {
-          const id = item.equipId || item.id;
-          const status = item.status || item.action;
-          if (id && status) latestStatus[id.trim()] = status.trim();
-        });
-        
-        equipments.forEach(equip => {
-          const s = latestStatus[equip.id];
-          if (s === 'borrowed' || s === 'BORROW' || s === 'ยืม') {
-            equip.status = 'borrowed';
-          } else if (s === 'available' || s === 'RETURN' || s === 'คืน') {
-            equip.status = 'available';
+          const id = (item.equipId || item.id || '').trim();
+          const status = (item.status || item.action || '').trim().toLowerCase();
+          const eq = equipments.find(e => e.id === id);
+          if (eq) {
+            if (status === 'borrowed' || status === 'borrow' || status === 'ยืม') {
+              eq.status = 'borrowed';
+            } else {
+              eq.status = 'available';
+            }
           }
         });
       }
       
-      saveData();
+      document.getElementById('syncLabel').innerHTML = '<span class="sync-dot" style="background:#52c41a"></span> ซิงค์ข้อมูลกับชีตเรียบร้อย';
+      
+      // อัปเดตการแสดงผลหน้าจอทั้งหมด
       updateStats();
       renderEquipGrid();
       renderReturnList();
@@ -615,7 +618,8 @@ async function pullDataFromSheet() {
       renderEquipTable();
     }
   } catch (error) {
-    console.error("เชื่อมต่อ API ดึงข้อมูลไม่สำเร็จ:", error);
+    console.error("ดึงข้อมูลชีตไม่สำเร็จ:", error);
+    document.getElementById('syncLabel').innerHTML = '<span class="sync-dot" style="background:#faad14"></span> เชื่อมต่อล้มเหลว (กำลังลองใหม่)';
   }
 }
 
@@ -633,18 +637,28 @@ function switchTab(name) {
 
 function renderEquipGrid() {
   const grid = document.getElementById('equipGrid');
-  const avail = equipments.filter(e => e.status === 'available');
-  if (avail.length === 0) {
-    grid.innerHTML = '<div style="color:var(--gray-400);font-size:13px;padding:12px 0">ไม่มีอุปกรณ์พร้อมให้ยืม</div>';
+  if (equipments.length === 0) {
+    grid.innerHTML = '<div style="color:var(--gray-400);font-size:13px;padding:12px 0">ไม่มีอุปกรณ์ในระบบ</div>';
     return;
   }
-  grid.innerHTML = avail.map(e => `
-    <div class="equip-card${e.id === selectedEquipId ? ' selected' : ''}" onclick="selectEquip('${e.id}')">
-      <div class="equip-name">${e.name}</div>
-      <div class="equip-id">${e.id}</div>
-      <span class="equip-status available"><span class="equip-status-dot"></span>พร้อมให้ยืม</span>
-    </div>
-  `).join('');
+  grid.innerHTML = equipments.map(e => {
+    const isSelected = e.id === selectedEquipId;
+    const isBorrowed = e.status === 'borrowed';
+    let cardClass = "equip-card";
+    if (isSelected) cardClass += " selected";
+    if (isBorrowed) cardClass += " borrowed";
+    
+    return `
+      <div class="${cardClass}" onclick="${isBorrowed ? "showToast('อุปกรณ์ชิ้นนี้ถูกยืมอยู่')" : `selectEquip('${e.id}')`}">
+        <div class="equip-name">${e.name}</div>
+        <div class="equip-id">${e.id}</div>
+        ${isBorrowed 
+          ? '<span class="equip-status borrowed"><span class="equip-status-dot"></span>ถูกยืมอยู่</span>' 
+          : '<span class="equip-status available"><span class="equip-status-dot"></span>พร้อมให้ยืม</span>'
+        }
+      </div>
+    `;
+  }).join('');
 }
 
 function selectEquip(id) {
@@ -692,7 +706,7 @@ function showToast(msg) {
 async function sendToSheet(payload) {
   if (!sheetUrl || sheetUrl.includes('XXXXXX')) return { ok: false, reason: 'no-url' };
   try {
-    const res = await fetch(sheetUrl, {
+    await fetch(sheetUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -731,10 +745,10 @@ async function submitBorrow() {
 
   const transId = genTransId();
   const timestamp = new Date().toISOString();
+  
   const trans = { transId, timestamp, equipId: selectedEquipId, equipName: eq.name, borrowerName, department, phone, dueDate, note, action: 'BORROW', returnedAt: null };
   transactions.unshift(trans);
   eq.status = 'borrowed';
-  saveData();
 
   const payload = { action: 'WEB_BORROW', transId, equipId: selectedEquipId, equipName: eq.name, borrowerName, department, phone, dueDate, note, timestamp };
   await sendToSheet(payload);
@@ -742,8 +756,9 @@ async function submitBorrow() {
   updateStats();
   renderEquipGrid();
 
-  showMsg('borrowFormMsg','success', `บันทึกการยืมสำเร็จ รหัส: ${transId}`);
+  showMsg('borrowFormMsg','success', `ส่งข้อมูลเข้าชีตเรียบร้อย รหัส: ${transId}`);
   showToast('ยืม ' + eq.name + ' สำเร็จ');
+  
   document.getElementById('borrowerName').value = '';
   document.getElementById('department').value = '';
   document.getElementById('phone').value = '';
@@ -755,14 +770,14 @@ async function submitBorrow() {
   btn.disabled = false;
   btn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2"><path d="M12 5v14M5 12l7-7 7 7"/></svg> ยืนยันการยืม';
   
-  pullDataFromSheet();
+  setTimeout(pullDataFromSheet, 1000); // ดึงข้อมูลอัปเดตจากชีตทันทีหลังจากบันทึก
 }
 
 function renderReturnList() {
-  const borrowed = transactions.filter(t => t.action === 'BORROW' && !t.returnedAt);
+  const borrowed = transactions.filter(t => (t.action === 'BORROW' || t.action === 'WEB_BORROW') && !t.returnedAt);
   const el = document.getElementById('returnList');
   if (borrowed.length === 0) {
-    el.innerHTML = '<div style="color:var(--gray-400);font-size:14px;padding:12px 0">ไม่มีรายการที่กำลังถูกยืมอยู่</div>';
+    el.innerHTML = '<div style="color:var(--gray-400);font-size:14px;padding:12px 0">ไม่มีรายการค้างคืนในชีตตอนนี้</div>';
     return;
   }
   el.innerHTML = `<div style="overflow-x:auto"><table><thead><tr>
@@ -800,20 +815,19 @@ async function submitReturn() {
     const eq = equipments.find(e => e.id === trans.equipId);
     if (eq) eq.status = 'available';
     
-    const payload = { action: 'WEB_RETURN', transId: 'RET-' + genTransId(), equipId: trans.equipId, equipName: trans.equipName, borrowerName: trans.borrowerName, department: trans.department, phone: trans.phone, dueDate: trans.dueDate, note: 'คืนแล้ว (อ้างอิง: ' + transId + ')', timestamp: now };
+    const payload = { action: 'WEB_RETURN', transId: 'RET-' + genTransId(), equipId: trans.equipId, equipName: trans.equipName, borrowerName: trans.borrowerName, department: trans.department, phone: trans.phone, dueDate: trans.dueDate, note: 'คืนสำเร็จ', timestamp: now };
     await sendToSheet(payload);
   }
 
-  saveData();
   updateStats();
   renderReturnList();
 
-  showMsg('returnMsg','success', `บันทึกการคืน ${checked.length} รายการสำเร็จ`);
-  showToast(`คืนอุปกรณ์ ${checked.length} รายการสำเร็จ`);
+  showMsg('returnMsg','success', `ส่งคำขอคืน ${checked.length} รายการเข้าชีตแล้ว`);
+  showToast(`คืนสำเร็จ ${checked.length} รายการ`);
   btn.disabled = false;
   btn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg> ยืนยันการคืน';
   
-  pullDataFromSheet();
+  setTimeout(pullDataFromSheet, 1000);
 }
 
 function renderHistory() {
@@ -855,7 +869,7 @@ function renderEquipTable() {
       <td style="font-family:monospace;font-size:12px">${e.id}</td>
       <td>${e.name}</td>
       <td><span class="equip-status ${e.status === 'available' ? 'available' : 'borrowed'}"><span class="equip-status-dot"></span>${e.status === 'available' ? 'พร้อมให้ยืม' : 'ถูกยืม'}</span></td>
-      <td><button class="btn btn-sm" style="color:var(--red-600);border-color:var(--red-600)" onclick="deleteEquip('${e.id}')">ลบ</button></td>
+      <td><button class="btn btn-sm" style="color:var(--red-600);border-color:var(--red-600);background:none" onclick="deleteEquip('${e.id}')">ลบ</button></td>
     </tr>
   `).join('');
 }
@@ -867,15 +881,17 @@ function addEquipment() {
   const note = document.getElementById('newEquipNote').value.trim();
   if (!id || !name) return showToast('กรุณากรอกรหัสและชื่ออุปกรณ์');
   if (equipments.find(e => e.id === id)) return showToast('รหัสอุปกรณ์ซ้ำกัน');
+  
   equipments.push({ id, name, category, note, status: 'available' });
-  saveData();
+  
   updateStats();
   renderEquipTable();
   renderEquipGrid();
+  
   document.getElementById('newEquipId').value = '';
   document.getElementById('newEquipName').value = '';
   document.getElementById('newEquipNote').value = '';
-  showToast('เพิ่มอุปกรณ์สำเร็จ: ' + name);
+  showToast('เพิ่มอุปกรณ์ชั่วคราวสำเร็จ: ' + name);
 }
 
 function deleteEquip(id) {
@@ -883,7 +899,7 @@ function deleteEquip(id) {
   if (eq && eq.status === 'borrowed') return showToast('ไม่สามารถลบอุปกรณ์ที่กำลังถูกยืมอยู่');
   if (!confirm('ยืนยันการลบ ' + (eq ? eq.name : id) + ' ?')) return;
   equipments = equipments.filter(e => e.id !== id);
-  saveData();
+  
   updateStats();
   renderEquipTable();
   renderEquipGrid();
@@ -897,11 +913,15 @@ function setDefaultDate() {
   document.getElementById('dueDate').value = iso;
 }
 
-loadData();
+// เริ่มต้นระบบ
+loadDefaultEquipments();
 setDefaultDate();
 updateStats();
 renderEquipGrid();
+
+// เรียกดึงข้อมูลครั้งแรก และตั้งเวลาดึงข้อมูลอัตโนมัติจากชีตทุกๆ 5 วินาที (5000ms)
 pullDataFromSheet();
+setInterval(pullDataFromSheet, 5000);
 </script>
 </body>
 </html>
