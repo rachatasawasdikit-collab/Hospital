@@ -131,9 +131,13 @@
 </div>
 
 <script>
-// เรียก backend ผ่าน google.script.run -> ไม่มีปัญหา CORS, ไม่ต้องตั้ง API_URL
+// ✅ จุดที่ 1: เรียก backend ผ่าน google.script.run + เช็คว่าเปิดผ่าน Web App หรือไม่
 function callAPI(payload){
   return new Promise(function(resolve, reject){
+    if (typeof google === 'undefined' || !google.script || !google.script.run) {
+      reject(new Error('ต้องเปิดผ่านลิงก์ Web App (ลงท้าย /exec) เท่านั้น — เปิดไฟล์ HTML ตรง ๆ ใช้ไม่ได้'));
+      return;
+    }
     const runner = google.script.run.withSuccessHandler(resolve).withFailureHandler(reject);
     if (payload.action === 'REGISTER') runner.apiRegister(payload);
     else if (payload.action === 'LOGIN') runner.apiLogin(payload);
@@ -222,7 +226,8 @@ async function handleRegister(e){
       showAlert('registerAlert','error', result.message || 'สมัครสมาชิกไม่สำเร็จ');
     }
   } catch (err) {
-    showAlert('registerAlert','error','เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
+    // ✅ จุดที่ 2: แสดงข้อความ error จริง
+    showAlert('registerAlert','error', (err && err.message) ? err.message : 'เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ');
   }
   btn.disabled=false; btn.innerHTML='สมัครสมาชิก';
 }
@@ -246,10 +251,11 @@ async function handleLogin(e){
       showAlert('loginAlert','error', result.message || 'เข้าสู่ระบบไม่สำเร็จ');
     }
   } catch (err) {
-    showAlert('loginAlert','error','เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
+    // ✅ จุดที่ 3: แสดงข้อความ error จริง
+    showAlert('loginAlert','error', (err && err.message) ? err.message : 'เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ');
   }
   btn.disabled=false; btn.innerHTML='ล็อคอิน';
 }
 </script>
 </body>
-</html>
+</html>	
