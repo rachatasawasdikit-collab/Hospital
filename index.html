@@ -1,417 +1,255 @@
 <!DOCTYPE html>
-  <html lang="th">
-  <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ระบบสมาชิก — เข้าสู่ระบบ / สมัครสมาชิก</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@600;700&family=Sarabun:wght@400;500;600&display=swap');
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ระบบสมาชิก — เข้าสู่ระบบ / สมัครสมาชิก</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@600;700&family=Sarabun:wght@400;500;600&display=swap');
+  :root{
+    --bg:#131316;--card-bg:#202024;--card-border:#2b2b31;--input-bg:#34343c;--input-bg-focus:#3a3a44;
+    --input-border:#403f48;--accent:#3b82f6;--accent-hover:#2f6fe0;--accent-soft:rgba(59,130,246,.18);
+    --text-primary:#f4f4f6;--text-label:#a3a3ad;--text-placeholder:#75757f;--text-muted:#86868f;
+    --success:#34d399;--success-bg:rgba(52,211,153,.12);--error:#f87171;--error-bg:rgba(248,113,113,.12);
+    --radius-card:18px;--radius-input:10px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Sarabun',sans-serif;background:var(--bg);
+    background-image:radial-gradient(circle at 50% -10%, rgba(59,130,246,.10), transparent 60%);
+    color:var(--text-primary);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px 16px;}
+  .auth-shell{width:100%;max-width:430px;}
+  .auth-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-card);
+    padding:36px 34px 32px;box-shadow:0 20px 60px -20px rgba(0,0,0,.6);display:none;animation:fadeIn .35s ease;}
+  .auth-card.active{display:block;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+  .auth-title{font-family:'Prompt',sans-serif;font-weight:700;font-size:24px;text-align:center;margin-bottom:26px;letter-spacing:.2px;}
+  .field{margin-bottom:17px;}
+  .field label{display:block;font-size:13px;font-weight:500;color:var(--text-label);margin-bottom:7px;}
+  .field label .req{color:var(--error);margin-left:2px;}
+  .field input[type=text],.field input[type=email],.field input[type=tel],.field input[type=password],.field select{
+    width:100%;background:var(--input-bg);border:1.5px solid var(--input-border);border-radius:var(--radius-input);
+    padding:12px 14px;font-family:'Sarabun',sans-serif;font-size:14px;color:var(--text-primary);
+    transition:border-color .15s,background .15s,box-shadow .15s;}
+  .field input::placeholder{color:var(--text-placeholder);}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--accent);background:var(--input-bg-focus);box-shadow:0 0 0 3px var(--accent-soft);}
+  .field select{appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:36px;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a3a3ad' stroke-width='2'><path d='M6 9l6 6 6-6'/></svg>");
+    background-repeat:no-repeat;background-position:right 14px center;background-size:14px;}
+  .field select:invalid{color:var(--text-placeholder);}
+  .dob-wrap{position:relative;}
+  .dob-wrap input[type=text]{padding-right:44px;}
+  .dob-icon-btn{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:32px;height:32px;border:none;
+    background:transparent;color:var(--text-label);display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:7px;}
+  .dob-icon-btn:hover{background:rgba(255,255,255,.06);color:var(--accent);}
+  .dob-icon-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;}
+  .dob-native{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;}
+  .btn-submit{width:100%;margin-top:6px;padding:13px;border:none;border-radius:var(--radius-input);background:var(--accent);
+    color:#fff;font-family:'Prompt',sans-serif;font-weight:600;font-size:15px;cursor:pointer;display:flex;align-items:center;
+    justify-content:center;gap:8px;transition:background .15s,transform .05s;}
+  .btn-submit:hover{background:var(--accent-hover);}
+  .btn-submit:active{transform:scale(.98);}
+  .btn-submit:disabled{opacity:.65;cursor:default;}
+  .switch-link{text-align:center;margin-top:20px;font-size:13px;color:var(--text-muted);}
+  .switch-link a{color:var(--accent);font-weight:500;cursor:pointer;text-decoration:none;}
+  .switch-link a:hover{text-decoration:underline;}
+  .alert{padding:11px 14px;border-radius:9px;font-size:13px;margin-bottom:16px;display:flex;gap:8px;align-items:flex-start;line-height:1.5;}
+  .alert svg{width:16px;height:16px;flex-shrink:0;margin-top:1px;}
+  .alert-success{background:var(--success-bg);color:var(--success);}
+  .alert-error{background:var(--error-bg);color:var(--error);}
+  .spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;display:inline-block;animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .welcome-icon{width:56px;height:56px;border-radius:50%;background:var(--success-bg);color:var(--success);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;}
+  .welcome-icon svg{width:28px;height:28px;stroke:currentColor;fill:none;stroke-width:2;}
+  .welcome-sub{text-align:center;color:var(--text-muted);font-size:13px;margin-bottom:6px;}
+  .welcome-name{text-align:center;font-family:'Prompt',sans-serif;font-weight:600;font-size:18px;margin-bottom:28px;}
+  @media (max-width:480px){ .auth-card{padding:28px 22px 26px;} }
+</style>
+</head>
+<body>
+<div class="auth-shell">
 
-    :root{
-      --bg:#131316;
-      --card-bg:#202024;
-      --card-border:#2b2b31;
-      --input-bg:#34343c;
-      --input-bg-focus:#3a3a44;
-      --input-border:#403f48;
-      --accent:#3b82f6;
-      --accent-hover:#2f6fe0;
-      --accent-soft:rgba(59,130,246,.18);
-      --text-primary:#f4f4f6;
-      --text-label:#a3a3ad;
-      --text-placeholder:#75757f;
-      --text-muted:#86868f;
-      --success:#34d399;
-      --success-bg:rgba(52,211,153,.12);
-      --error:#f87171;
-      --error-bg:rgba(248,113,113,.12);
-      --warn:#fbbf24;
-      --warn-bg:rgba(250,204,21,.12);
-      --radius-card:18px;
-      --radius-input:10px;
-    }
-    *{box-sizing:border-box;margin:0;padding:0;}
-    body{
-      font-family:'Sarabun',sans-serif;
-      background:var(--bg);
-      background-image:radial-gradient(circle at 50% -10%, rgba(59,130,246,.10), transparent 60%);
-      color:var(--text-primary);
-      min-height:100vh;
-      display:flex;align-items:center;justify-content:center;
-      padding:32px 16px;
-    }
-    .auth-shell{width:100%;max-width:430px;}
-
-    .config-warning{
-      background:var(--warn-bg);color:var(--warn);border:1px solid rgba(250,204,21,.3);
-      padding:12px 16px;border-radius:10px;font-size:12.5px;margin-bottom:16px;
-      display:none;gap:8px;align-items:flex-start;line-height:1.5;
-    }
-    .config-warning svg{width:16px;height:16px;flex-shrink:0;margin-top:1px;stroke:currentColor;fill:none;stroke-width:2;}
-
-    .auth-card{
-      background:var(--card-bg);
-      border:1px solid var(--card-border);
-      border-radius:var(--radius-card);
-      padding:36px 34px 32px;
-      box-shadow:0 20px 60px -20px rgba(0,0,0,.6);
-      display:none;
-      animation:fadeIn .35s ease;
-    }
-    .auth-card.active{display:block;}
-    @keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
-
-    .auth-title{
-      font-family:'Prompt',sans-serif;font-weight:700;font-size:24px;
-      text-align:center;margin-bottom:26px;letter-spacing:.2px;
-    }
-
-    .field{margin-bottom:17px;}
-    .field label{display:block;font-size:13px;font-weight:500;color:var(--text-label);margin-bottom:7px;}
-    .field label .req{color:var(--error);margin-left:2px;}
-
-    .field input[type=text],
-    .field input[type=email],
-    .field input[type=tel],
-    .field input[type=password],
-    .field select{
-      width:100%;background:var(--input-bg);border:1.5px solid var(--input-border);
-      border-radius:var(--radius-input);padding:12px 14px;font-family:'Sarabun',sans-serif;
-      font-size:14px;color:var(--text-primary);transition:border-color .15s,background .15s,box-shadow .15s;
-    }
-    .field input::placeholder{color:var(--text-placeholder);}
-    .field input:focus,.field select:focus{
-      outline:none;border-color:var(--accent);background:var(--input-bg-focus);
-      box-shadow:0 0 0 3px var(--accent-soft);
-    }
-
-    .field select{
-      appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:36px;
-      background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a3a3ad' stroke-width='2'><path d='M6 9l6 6 6-6'/></svg>");
-      background-repeat:no-repeat;background-position:right 14px center;background-size:14px;
-    }
-    .field select:invalid{color:var(--text-placeholder);}
-
-    .dob-wrap{position:relative;}
-    .dob-wrap input[type=text]{padding-right:44px;}
-    .dob-icon-btn{
-      position:absolute;right:6px;top:50%;transform:translateY(-50%);
-      width:32px;height:32px;border:none;background:transparent;color:var(--text-label);
-      display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:7px;
-    }
-    .dob-icon-btn:hover{background:rgba(255,255,255,.06);color:var(--accent);}
-    .dob-icon-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;}
-    .dob-native{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;}
-
-    .btn-submit{
-      width:100%;margin-top:6px;padding:13px;border:none;border-radius:var(--radius-input);
-      background:var(--accent);color:#fff;font-family:'Prompt',sans-serif;font-weight:600;font-size:15px;
-      cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
-      transition:background .15s,transform .05s;
-    }
-    .btn-submit:hover{background:var(--accent-hover);}
-    .btn-submit:active{transform:scale(.98);}
-    .btn-submit:disabled{opacity:.65;cursor:default;}
-
-    .switch-link{text-align:center;margin-top:20px;font-size:13px;color:var(--text-muted);}
-    .switch-link a{color:var(--accent);font-weight:500;cursor:pointer;text-decoration:none;}
-    .switch-link a:hover{text-decoration:underline;}
-
-    .alert{padding:11px 14px;border-radius:9px;font-size:13px;margin-bottom:16px;display:flex;gap:8px;align-items:flex-start;line-height:1.5;}
-    .alert svg{width:16px;height:16px;flex-shrink:0;margin-top:1px;}
-    .alert-success{background:var(--success-bg);color:var(--success);}
-    .alert-error{background:var(--error-bg);color:var(--error);}
-
-    .spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;display:inline-block;animation:spin .7s linear infinite;}
-    @keyframes spin{to{transform:rotate(360deg);}}
-
-    .welcome-icon{width:56px;height:56px;border-radius:50%;background:var(--success-bg);color:var(--success);
-      display:flex;align-items:center;justify-content:center;margin:0 auto 18px;}
-    .welcome-icon svg{width:28px;height:28px;stroke:currentColor;fill:none;stroke-width:2;}
-    .welcome-sub{text-align:center;color:var(--text-muted);font-size:13px;margin-bottom:6px;}
-    .welcome-name{text-align:center;font-family:'Prompt',sans-serif;font-weight:600;font-size:18px;margin-bottom:28px;}
-
-    @media (max-width:480px){ .auth-card{padding:28px 22px 26px;} }
-  </style>
-  </head>
-  <body>
-
-  <div class="auth-shell">
-
-    <div class="config-warning" id="configWarning">
-      <svg viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
-      <span>ยังไม่ได้ตั้งค่า API_URL — เปิดไฟล์นี้แล้วใส่ลิงก์ Web App จาก Google Apps Script ในตัวแปร <code>API_URL</code> ก่อนใช้งานจริง (ดูวิธีตั้งค่าด้านล่างไฟล์ Code.gs)</span>
-    </div>
-
-    <!-- ===================== หน้าเข้าสู่ระบบ ===================== -->
-    <div class="auth-card active" id="loginCard">
-      <h2 class="auth-title">เข้าสู่ระบบ</h2>
-      <div id="loginAlert"></div>
-      <form id="loginForm" onsubmit="handleLogin(event)" novalidate>
-        <div class="field">
-          <label>Username <span class="req">*</span></label>
-          <input type="text" id="loginUsername" placeholder="กรอก Username ของคุณ" autocomplete="username">
-        </div>
-        <div class="field">
-          <label>รหัสผ่าน <span class="req">*</span></label>
-          <input type="password" id="loginPassword" placeholder="กรอกรหัสผ่าน" autocomplete="current-password">
-        </div>
-        <div class="field">
-          <label>อีเมล <span class="req">*</span></label>
-          <input type="email" id="loginEmail" placeholder="กรอกอีเมลของคุณ" autocomplete="email">
-        </div>
-        <button type="submit" class="btn-submit" id="loginBtn">ล็อคอิน</button>
-      </form>
-      <div class="switch-link">ยังไม่มีบัญชีใช่ไหม? <a onclick="switchView('register')">สมัครสมาชิกที่นี่</a></div>
-    </div>
-
-    <!-- ===================== หน้าหลังเข้าสู่ระบบสำเร็จ ===================== -->
-    <div class="auth-card" id="welcomeCard">
-      <div class="welcome-icon"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg></div>
-      <h2 class="auth-title" style="margin-bottom:8px;">เข้าสู่ระบบสำเร็จ</h2>
-      <p class="welcome-sub">ยินดีต้อนรับ</p>
-      <p class="welcome-name" id="welcomeName"></p>
-      <button class="btn-submit" onclick="switchView('login')">ออกจากระบบ</button>
-    </div>
-
-    <!-- ===================== หน้าสมัครสมาชิก ===================== -->
-    <div class="auth-card" id="registerCard">
-      <h2 class="auth-title">สมัครสมาชิก</h2>
-      <div id="registerAlert"></div>
-      <form id="registerForm" onsubmit="handleRegister(event)" novalidate>
-        <div class="field">
-          <label>คำนำหน้า <span class="req">*</span></label>
-          <select id="regTitle" required>
-            <option value="" disabled selected>เลือกคำนำหน้า (ตามเพศกำเนิด)</option>
-            <option value="นาย">นาย</option>
-            <option value="นางสาว">นางสาว</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>ชื่อ - นามสกุล <span class="req">*</span></label>
-          <input type="text" id="regFullName" placeholder="กรอกชื่อของคุณ" autocomplete="name">
-        </div>
-        <div class="field">
-          <label>วัน/เดือน/ปีเกิด <span class="req">*</span></label>
-          <div class="dob-wrap">
-            <input type="text" id="regDOBText" placeholder="วว/ดด/ปปปป" inputmode="numeric" maxlength="10" oninput="formatDOB(event)">
-            <button type="button" class="dob-icon-btn" onclick="openDOBPicker()" aria-label="เลือกวันที่จากปฏิทิน">
-              <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>
-            </button>
-            <input type="date" id="regDOBPicker" class="dob-native" tabindex="-1" onchange="syncDOBFromPicker(event)">
-          </div>
-        </div>
-        <div class="field">
-          <label>เบอร์โทร <span class="req">*</span></label>
-          <input type="tel" id="regPhone" placeholder="เช่น 0812345678" inputmode="numeric" maxlength="10">
-        </div>
-        <div class="field">
-          <label>อีเมล <span class="req">*</span></label>
-          <input type="email" id="regEmail" placeholder="กรอกอีเมลที่ใช้งานจริง" autocomplete="email">
-        </div>
-        <div class="field">
-          <label>Username <span class="req">*</span></label>
-          <input type="text" id="regUsername" placeholder="ตั้งชื่อผู้ใช้สำหรับเข้าสู่ระบบ" autocomplete="username">
-        </div>
-        <div class="field">
-          <label>รหัสผ่าน <span class="req">*</span></label>
-          <input type="password" id="regPassword" placeholder="ตั้งรหัสผ่าน" autocomplete="new-password">
-        </div>
-        <div class="field">
-          <label>ยืนยันรหัสผ่าน <span class="req">*</span></label>
-          <input type="password" id="regConfirmPassword" placeholder="ยืนยันรหัสผ่าน" autocomplete="new-password">
-        </div>
-        <button type="submit" class="btn-submit" id="registerBtn">สมัครสมาชิก</button>
-      </form>
-      <div class="switch-link">มีบัญชีอยู่แล้ว? <a onclick="switchView('login')">เข้าสู่ระบบที่นี่</a></div>
-    </div>
-
+  <!-- เข้าสู่ระบบ -->
+  <div class="auth-card active" id="loginCard">
+    <h2 class="auth-title">เข้าสู่ระบบ</h2>
+    <div id="loginAlert"></div>
+    <form id="loginForm" onsubmit="handleLogin(event)" novalidate>
+      <div class="field"><label>Username <span class="req">*</span></label>
+        <input type="text" id="loginUsername" placeholder="กรอก Username ของคุณ" autocomplete="username"></div>
+      <div class="field"><label>รหัสผ่าน <span class="req">*</span></label>
+        <input type="password" id="loginPassword" placeholder="กรอกรหัสผ่าน" autocomplete="current-password"></div>
+      <div class="field"><label>อีเมล <span class="req">*</span></label>
+        <input type="email" id="loginEmail" placeholder="กรอกอีเมลของคุณ" autocomplete="email"></div>
+      <button type="submit" class="btn-submit" id="loginBtn">ล็อคอิน</button>
+    </form>
+    <div class="switch-link">ยังไม่มีบัญชีใช่ไหม? <a onclick="switchView('register')">สมัครสมาชิกที่นี่</a></div>
   </div>
 
-  <script>
-  // ==========================================================
-  // ⚙️ ตั้งค่าหลัก — ใส่ลิงก์ Web App จาก Google Apps Script ตรงนี้
-  // (วิธีหา: Deploy > New deployment > Web app > คัดลอก URL ที่ได้)
-  // ==========================================================
-  const API_URL = 'https://script.google.com/macros/s/AKfycbwGslpfnrsMlXgJKzG4lyU_KO5PADFUGDbIkqGx44-qh_HXTvgpDYl_x1bpWDrSG_Wm-Q/exec';
+  <!-- หลังเข้าสู่ระบบสำเร็จ -->
+  <div class="auth-card" id="welcomeCard">
+    <div class="welcome-icon"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg></div>
+    <h2 class="auth-title" style="margin-bottom:8px;">เข้าสู่ระบบสำเร็จ</h2>
+    <p class="welcome-sub">ยินดีต้อนรับ</p>
+    <p class="welcome-name" id="welcomeName"></p>
+    <button class="btn-submit" onclick="switchView('login')">ออกจากระบบ</button>
+  </div>
 
-  function checkConfig(){
-    if (API_URL.includes('PUT_YOUR_')) {
-      document.getElementById('configWarning').style.display = 'flex';
+  <!-- สมัครสมาชิก -->
+  <div class="auth-card" id="registerCard">
+    <h2 class="auth-title">สมัครสมาชิก</h2>
+    <div id="registerAlert"></div>
+    <form id="registerForm" onsubmit="handleRegister(event)" novalidate>
+      <div class="field"><label>คำนำหน้า <span class="req">*</span></label>
+        <select id="regTitle" required>
+          <option value="" disabled selected>เลือกคำนำหน้า (ตามเพศกำเนิด)</option>
+          <option value="นาย">นาย</option><option value="นางสาว">นางสาว</option>
+        </select></div>
+      <div class="field"><label>ชื่อ - นามสกุล <span class="req">*</span></label>
+        <input type="text" id="regFullName" placeholder="กรอกชื่อของคุณ" autocomplete="name"></div>
+      <div class="field"><label>วัน/เดือน/ปีเกิด <span class="req">*</span></label>
+        <div class="dob-wrap">
+          <input type="text" id="regDOBText" placeholder="วว/ดด/ปปปป" inputmode="numeric" maxlength="10" oninput="formatDOB(event)">
+          <button type="button" class="dob-icon-btn" onclick="openDOBPicker()" aria-label="เลือกวันที่จากปฏิทิน">
+            <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>
+          </button>
+          <input type="date" id="regDOBPicker" class="dob-native" tabindex="-1" onchange="syncDOBFromPicker(event)">
+        </div></div>
+      <div class="field"><label>เบอร์โทร <span class="req">*</span></label>
+        <input type="tel" id="regPhone" placeholder="เช่น 0812345678" inputmode="numeric" maxlength="10"></div>
+      <div class="field"><label>อีเมล <span class="req">*</span></label>
+        <input type="email" id="regEmail" placeholder="กรอกอีเมลที่ใช้งานจริง" autocomplete="email"></div>
+      <div class="field"><label>Username <span class="req">*</span></label>
+        <input type="text" id="regUsername" placeholder="ตั้งชื่อผู้ใช้สำหรับเข้าสู่ระบบ" autocomplete="username"></div>
+      <div class="field"><label>รหัสผ่าน <span class="req">*</span></label>
+        <input type="password" id="regPassword" placeholder="ตั้งรหัสผ่าน" autocomplete="new-password"></div>
+      <div class="field"><label>ยืนยันรหัสผ่าน <span class="req">*</span></label>
+        <input type="password" id="regConfirmPassword" placeholder="ยืนยันรหัสผ่าน" autocomplete="new-password"></div>
+      <button type="submit" class="btn-submit" id="registerBtn">สมัครสมาชิก</button>
+    </form>
+    <div class="switch-link">มีบัญชีอยู่แล้ว? <a onclick="switchView('login')">เข้าสู่ระบบที่นี่</a></div>
+  </div>
+
+</div>
+
+<script>
+// เรียก backend ผ่าน google.script.run -> ไม่มีปัญหา CORS, ไม่ต้องตั้ง API_URL
+function callAPI(payload){
+  return new Promise(function(resolve, reject){
+    const runner = google.script.run.withSuccessHandler(resolve).withFailureHandler(reject);
+    if (payload.action === 'REGISTER') runner.apiRegister(payload);
+    else if (payload.action === 'LOGIN') runner.apiLogin(payload);
+    else reject(new Error('unknown action'));
+  });
+}
+
+function switchView(view){
+  ['loginCard','registerCard','welcomeCard'].forEach(id => document.getElementById(id).classList.remove('active'));
+  const map = { login:'loginCard', register:'registerCard', welcome:'welcomeCard' };
+  document.getElementById(map[view]).classList.add('active');
+  showAlert('loginAlert','',''); showAlert('registerAlert','','');
+}
+
+function showAlert(elId, type, msg){
+  const el = document.getElementById(elId);
+  if (!msg) { el.innerHTML = ''; return; }
+  const icon = type === 'success'
+    ? '<path d="M5 12l5 5L20 7"/>'
+    : '<path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>';
+  el.innerHTML = `<div class="alert alert-${type}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">${icon}</svg><span>${msg}</span></div>`;
+}
+
+function formatDOB(e){
+  let digits = e.target.value.replace(/\D/g,'').slice(0,8);
+  let out = digits.slice(0,2);
+  if (digits.length > 2) out += '/' + digits.slice(2,4);
+  if (digits.length > 4) out += '/' + digits.slice(4,8);
+  e.target.value = out;
+}
+function openDOBPicker(){
+  const picker = document.getElementById('regDOBPicker');
+  if (picker.showPicker) { try { picker.showPicker(); } catch(err) { picker.focus(); } } else picker.focus();
+}
+function syncDOBFromPicker(e){
+  const val = e.target.value; if (!val) return;
+  const [y,m,d] = val.split('-');
+  document.getElementById('regDOBText').value = `${d}/${m}/${y}`;
+}
+function parseDOBToISO(text){
+  const m = text.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!m) return null;
+  const [, d, mo, y] = m;
+  const day=parseInt(d,10), month=parseInt(mo,10), year=parseInt(y,10);
+  if (month<1||month>12) return null;
+  const daysInMonth = new Date(year, month, 0).getDate();
+  if (day<1||day>daysInMonth) return null;
+  if (year<1900||year>new Date().getFullYear()) return null;
+  return `${y}-${mo}-${d}`;
+}
+function isValidUsername(v){ return /^[A-Za-z0-9_]{4,20}$/.test(v); }
+function isValidEmail(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+function isValidPhone(v){ return /^0\d{8,9}$/.test(v); }
+
+async function handleRegister(e){
+  e.preventDefault(); showAlert('registerAlert','','');
+  const title=document.getElementById('regTitle').value;
+  const fullName=document.getElementById('regFullName').value.trim();
+  const dobText=document.getElementById('regDOBText').value.trim();
+  const phone=document.getElementById('regPhone').value.trim();
+  const email=document.getElementById('regEmail').value.trim();
+  const username=document.getElementById('regUsername').value.trim();
+  const password=document.getElementById('regPassword').value;
+  const confirmPassword=document.getElementById('regConfirmPassword').value;
+
+  if (!title||!fullName||!dobText||!phone||!email||!username||!password||!confirmPassword)
+    return showAlert('registerAlert','error','กรุณากรอกข้อมูลให้ครบทุกช่อง');
+  if (!isValidUsername(username))
+    return showAlert('registerAlert','error','Username ต้องมี 4-20 ตัว เป็นภาษาอังกฤษ ตัวเลข หรือ _ เท่านั้น');
+  const dobISO = parseDOBToISO(dobText);
+  if (!dobISO) return showAlert('registerAlert','error','รูปแบบวัน/เดือน/ปีเกิดไม่ถูกต้อง (วว/ดด/ปปปป)');
+  if (!isValidPhone(phone)) return showAlert('registerAlert','error','กรุณากรอกเบอร์โทรให้ถูกต้อง เช่น 0812345678');
+  if (!isValidEmail(email)) return showAlert('registerAlert','error','กรุณากรอกอีเมลให้ถูกต้อง');
+  if (password.length<6) return showAlert('registerAlert','error','รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร');
+  if (password!==confirmPassword) return showAlert('registerAlert','error','รหัสผ่านและการยืนยันไม่ตรงกัน');
+
+  const btn=document.getElementById('registerBtn');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> กำลังสมัครสมาชิก...';
+  try {
+    const result = await callAPI({ action:'REGISTER', username, title, fullName, dob:dobISO, phone, email, password });
+    if (result.success) {
+      showAlert('registerAlert','success', result.message || 'สมัครสมาชิกสำเร็จ');
+      document.getElementById('registerForm').reset();
+      setTimeout(() => switchView('login'), 1600);
+    } else {
+      showAlert('registerAlert','error', result.message || 'สมัครสมาชิกไม่สำเร็จ');
     }
+  } catch (err) {
+    showAlert('registerAlert','error','เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
   }
-  checkConfig();
+  btn.disabled=false; btn.innerHTML='สมัครสมาชิก';
+}
 
-  // ----------------------------------------------------------
-  // สลับการ์ด (ล็อคอิน / สมัครสมาชิก / ยินดีต้อนรับ)
-  // ----------------------------------------------------------
-  function switchView(view){
-    ['loginCard','registerCard','welcomeCard'].forEach(id => document.getElementById(id).classList.remove('active'));
-    const map = { login:'loginCard', register:'registerCard', welcome:'welcomeCard' };
-    document.getElementById(map[view]).classList.add('active');
-    showAlert('loginAlert','','');
-    showAlert('registerAlert','','');
+async function handleLogin(e){
+  e.preventDefault(); showAlert('loginAlert','','');
+  const username=document.getElementById('loginUsername').value.trim();
+  const password=document.getElementById('loginPassword').value;
+  const email=document.getElementById('loginEmail').value.trim();
+  if (!username||!password||!email) return showAlert('loginAlert','error','กรุณากรอกข้อมูลให้ครบทุกช่อง');
+
+  const btn=document.getElementById('loginBtn');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> กำลังเข้าสู่ระบบ...';
+  try {
+    const result = await callAPI({ action:'LOGIN', username, password, email });
+    if (result.success) {
+      document.getElementById('welcomeName').textContent = `${result.user.title}${result.user.fullName}`;
+      document.getElementById('loginForm').reset();
+      switchView('welcome');
+    } else {
+      showAlert('loginAlert','error', result.message || 'เข้าสู่ระบบไม่สำเร็จ');
+    }
+  } catch (err) {
+    showAlert('loginAlert','error','เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
   }
-
-  function showAlert(elId, type, msg){
-    const el = document.getElementById(elId);
-    if (!msg) { el.innerHTML = ''; return; }
-    const icon = type === 'success'
-      ? '<path d="M5 12l5 5L20 7"/>'
-      : '<path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>';
-    el.innerHTML = `<div class="alert alert-${type}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">${icon}</svg><span>${msg}</span></div>`;
-  }
-
-  // ----------------------------------------------------------
-  // เรียก API (ใช้ Content-Type: text/plain เพื่อเลี่ยงปัญหา CORS preflight ของ Apps Script)
-  // ----------------------------------------------------------
-  async function callAPI(payload){
-    const res = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(payload)
-    });
-    return res.json();
-  }
-
-  // ----------------------------------------------------------
-  // วัน/เดือน/ปีเกิด: จัดรูปแบบอัตโนมัติ + เชื่อมกับปฏิทินของเบราว์เซอร์
-  // ----------------------------------------------------------
-  function formatDOB(e){
-    let digits = e.target.value.replace(/\D/g,'').slice(0,8);
-    let out = digits.slice(0,2);
-    if (digits.length > 2) out += '/' + digits.slice(2,4);
-    if (digits.length > 4) out += '/' + digits.slice(4,8);
-    e.target.value = out;
-  }
-
-  function openDOBPicker(){
-    const picker = document.getElementById('regDOBPicker');
-    if (picker.showPicker) { try { picker.showPicker(); } catch(err) { picker.focus(); } }
-    else picker.focus();
-  }
-
-  function syncDOBFromPicker(e){
-    const val = e.target.value; // yyyy-mm-dd
-    if (!val) return;
-    const [y,m,d] = val.split('-');
-    document.getElementById('regDOBText').value = `${d}/${m}/${y}`;
-  }
-
-  function parseDOBToISO(text){
-    const m = text.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-    if (!m) return null;
-    const [, d, mo, y] = m;
-    const day = parseInt(d,10), month = parseInt(mo,10), year = parseInt(y,10);
-    if (month < 1 || month > 12) return null;
-    const daysInMonth = new Date(year, month, 0).getDate();
-    if (day < 1 || day > daysInMonth) return null;
-    if (year < 1900 || year > new Date().getFullYear()) return null;
-    return `${y}-${mo}-${d}`;
-  }
-
-  // ----------------------------------------------------------
-  // ตัวช่วยตรวจสอบข้อมูล
-  // ----------------------------------------------------------
-  function isValidUsername(v){ return /^[A-Za-z0-9_]{4,20}$/.test(v); }
-  function isValidEmail(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
-  function isValidPhone(v){ return /^0\d{8,9}$/.test(v); }
-
-  // ----------------------------------------------------------
-  // สมัครสมาชิก
-  // ----------------------------------------------------------
-  async function handleRegister(e){
-    e.preventDefault();
-    showAlert('registerAlert','','');
-
-    const title = document.getElementById('regTitle').value;
-    const fullName = document.getElementById('regFullName').value.trim();
-    const dobText = document.getElementById('regDOBText').value.trim();
-    const phone = document.getElementById('regPhone').value.trim();
-    const email = document.getElementById('regEmail').value.trim();
-    const username = document.getElementById('regUsername').value.trim();
-    const password = document.getElementById('regPassword').value;
-    const confirmPassword = document.getElementById('regConfirmPassword').value;
-
-    if (!title || !fullName || !dobText || !phone || !email || !username || !password || !confirmPassword) {
-      return showAlert('registerAlert','error','กรุณากรอกข้อมูลให้ครบทุกช่อง');
-    }
-    if (!isValidUsername(username)) {
-      return showAlert('registerAlert','error','Username ต้องมี 4-20 ตัวอักษร เป็นภาษาอังกฤษ ตัวเลข หรือ _ เท่านั้น');
-    }
-    const dobISO = parseDOBToISO(dobText);
-    if (!dobISO) {
-      return showAlert('registerAlert','error','รูปแบบวัน/เดือน/ปีเกิดไม่ถูกต้อง กรุณากรอกเป็น วว/ดด/ปปปป');
-    }
-    if (!isValidPhone(phone)) {
-      return showAlert('registerAlert','error','กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง เช่น 0812345678');
-    }
-    if (!isValidEmail(email)) {
-      return showAlert('registerAlert','error','กรุณากรอกอีเมลให้ถูกต้อง');
-    }
-    if (password.length < 6) {
-      return showAlert('registerAlert','error','รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร');
-    }
-    if (password !== confirmPassword) {
-      return showAlert('registerAlert','error','รหัสผ่านและการยืนยันรหัสผ่านไม่ตรงกัน');
-    }
-
-    const btn = document.getElementById('registerBtn');
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span> กำลังสมัครสมาชิก...';
-
-    try {
-      const result = await callAPI({ action:'REGISTER', username, title, fullName, dob: dobISO, phone, email, password });
-      if (result.success) {
-        showAlert('registerAlert','success', result.message || 'สมัครสมาชิกสำเร็จ กำลังพาไปหน้าเข้าสู่ระบบ...');
-        document.getElementById('registerForm').reset();
-        setTimeout(() => switchView('login'), 1600);
-      } else {
-        showAlert('registerAlert','error', result.message || 'สมัครสมาชิกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
-      }
-    } catch (err) {
-      showAlert('registerAlert','error','เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ กรุณาตรวจสอบ API_URL หรือลองใหม่อีกครั้ง');
-    }
-
-    btn.disabled = false;
-    btn.innerHTML = 'สมัครสมาชิก';
-  }
-
-  // ----------------------------------------------------------
-  // เข้าสู่ระบบ
-  // ----------------------------------------------------------
-  async function handleLogin(e){
-    e.preventDefault();
-    showAlert('loginAlert','','');
-
-    const username = document.getElementById('loginUsername').value.trim();
-    const password = document.getElementById('loginPassword').value;
-    const email = document.getElementById('loginEmail').value.trim();
-
-    if (!username || !password || !email) {
-      return showAlert('loginAlert','error','กรุณากรอกข้อมูลให้ครบทุกช่อง');
-    }
-
-    const btn = document.getElementById('loginBtn');
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span> กำลังเข้าสู่ระบบ...';
-
-    try {
-      const result = await callAPI({ action:'LOGIN', username, password, email });
-      if (result.success) {
-        document.getElementById('welcomeName').textContent = `${result.user.title}${result.user.fullName}`;
-        document.getElementById('loginForm').reset();
-        switchView('welcome');
-      } else {
-        showAlert('loginAlert','error', result.message || 'เข้าสู่ระบบไม่สำเร็จ');
-      }
-    } catch (err) {
-      showAlert('loginAlert','error','เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ กรุณาตรวจสอบ API_URL หรือลองใหม่อีกครั้ง');
-    }
-
-    btn.disabled = false;
-    btn.innerHTML = 'ล็อคอิน';
-  }
-  </script>
-  </body>
-  </html>
+  btn.disabled=false; btn.innerHTML='ล็อคอิน';
+}
+</script>
+</body>
+</html>
